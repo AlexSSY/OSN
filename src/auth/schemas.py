@@ -33,13 +33,25 @@ class UserChange(UserCreate):
 
 class User(UserBase):
     id: int
-    hashed_password: str
-    is_superuser: bool | None
-    is_admin: bool | None
-    registration_date: datetime | None
-    last_activity: datetime | None
-    is_online: bool | None
-    online_status: UserOnlineStatus | None
+    is_superuser: bool
+    is_admin: bool
+    registration_date: datetime
+    last_activity: datetime
+    is_online: bool
+    online_status: UserOnlineStatus
 
     class Config:
         orm_mode = True
+
+
+class UserLogin(UserCreate):
+    pass
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: str | None = None

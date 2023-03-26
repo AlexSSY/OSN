@@ -6,6 +6,7 @@ from .schemas import UserCreate, UserBase, UserChange
 from .utils import get_password_hash
 
 
+# Create
 def create_user(db: Session, user: UserCreate) -> User:
     hashed_password = get_password_hash(user.password)
     db_user = User(email=user.email, hashed_password=hashed_password)
@@ -15,14 +16,20 @@ def create_user(db: Session, user: UserCreate) -> User:
     return db_user
 
 
+# Retrieve
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     return db.query(User).filter(User.email == email).first()
+
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    return db.query(User).get(user_id)
 
 
 def get_users(db: Session, skip: int = 0, limit: int = 10) -> List[User]:
     return db.query(User).offset(skip).limit(limit).all()
 
 
+# Update
 def change_user(db: Session, user: UserChange) -> User:
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user:
@@ -34,3 +41,9 @@ def change_user(db: Session, user: UserChange) -> User:
         db_user.is_admin = user.is_admin
     if user.last_activity:
         db_user.last_activity = user.last_activity
+    return User(**(user.dict(exclude=True).update({'id': 1})))
+
+
+# Delete
+def delete_user_by_email(db: Session, user: UserBase) -> int:
+    db.query(User).filter(User.email == user.email).delete()
