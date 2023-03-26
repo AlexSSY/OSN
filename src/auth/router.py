@@ -5,13 +5,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from src.auth.utils import create_access_token, verify_password
-from src.config import ACCESS_TOKEN_EXPIRE_MINUTES
+from .utils import create_access_token, get_password_hash, verify_password
+from ..config import ACCESS_TOKEN_EXPIRE_MINUTES
 from ..dependencies import GetDBDep
 from .schemas import UserBase, UserCreate, User, UserChange, Token
 from .dependencies import GetCurrentUserDep, PaginationDep
 from ..database import SessionLocal
-from . import crud, models
+from . import models
 
 router = APIRouter(
     prefix='/users',
@@ -22,16 +22,23 @@ router = APIRouter(
 
 
 @router.post('/', response_model=User)
-def create_new_user(user: Annotated[UserCreate, Body()], db: GetDBDep):
-    if crud.get_user_by_email(db=db, email=user.email):
-        raise HTTPException(
-            status_code=400, detail=f'User {user.email} is already exists')
-    return crud.create_user(db=db, user=user)
+def create_new_user(user: Annotated[UserCreate, Body()]):
+    with SessionLocal() as db:
+        if db.query(models.User).filter(models.User.email == user.email).first():
+            raise HTTPException(
+                status_code=400, detail=f'User {user.email} is already exists')
+        hashed_password = get_password_hash(user.password)
+        db_user = models.User(
+            email=user.email, hashed_password=hashed_password)
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
 
 
 @router.get('', response_model=list[User])
 def get_users(pagination: PaginationDep, db: GetDBDep, current_user: GetCurrentUserDep):
-    return crud.get_users(db=db, skip=pagination['skip'], limit=pagination['limit'])
+    return db.query(models.User).offset(pagination['skip']).limit(pagination['limit']).all()
 
 
 @router.get('/me', response_model=User)
@@ -41,7 +48,7 @@ def get_me(current_user: GetCurrentUserDep):
 
 @router.get('/{user_id}', response_model=User)
 def get_user(user_id: Annotated[int, Path()], db: GetDBDep):
-    db_user = crud.get_user_by_id(db=db, user_id=user_id)
+    db_user = db.query(models.User).get(user_id)
     if not db_user:
         raise HTTPException(
             status_code=404, detail=f'User with id: {user_id} not found')
@@ -49,8 +56,26 @@ def get_user(user_id: Annotated[int, Path()], db: GetDBDep):
 
 
 @router.patch('/{user_id}/', response_model=User)
-def change_user(user_id: Annotated[int, Path()], user: UserChange, db: GetDBDep):
-    return crud.change_user(db=db, user=user)
+def change_user(user_id: Annotated[int, Path()], user: UserChange, current_user: GetCurrentUserDep):
+    with SessionLocal() as db:
+        db_user = db.get(models.User, user_id)
+        key_val = user.dict(exclude_unset=True)
+
+        if key_val.get('is_superuser') and not current_user.is_superuser:
+            raise HTTPException(
+                status_code=403, detail='You no have rights to change superuser status')
+
+        if key_val.get('is_admin') and not current_user.is_superuser:
+            raise HTTPException(
+                status_code=403, detail='You no have rights to change admin status')
+
+        for key, value in key_val.items():
+            setattr(db_user, key, value)
+
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return db_user
 
 
 @router.delete('/{user_id}/')

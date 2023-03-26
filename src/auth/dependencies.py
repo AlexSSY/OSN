@@ -20,7 +20,7 @@ def pagination(skip: int = 0, limit: int = 10) -> dict:
 PaginationDep = Annotated[dict, Depends(pagination)]
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/auth/")
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Optional[models.User]:

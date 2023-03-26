@@ -23,7 +23,7 @@ class UserChangePassword(UserBase):
     new_password: str
 
 
-class UserChange(UserCreate):
+class UserChange(BaseModel):
     is_superuser: bool | None
     is_admin: bool | None
     last_activity: datetime | None
