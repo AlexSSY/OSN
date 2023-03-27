@@ -47,12 +47,13 @@ def get_me(current_user: GetCurrentUserDep):
 
 
 @router.get('/{user_id}', response_model=User)
-def get_user(user_id: Annotated[int, Path()], db: GetDBDep):
-    db_user = db.query(models.User).get(user_id)
-    if not db_user:
-        raise HTTPException(
-            status_code=404, detail=f'User with id: {user_id} not found')
-    return db_user
+def get_user(user_id: Annotated[int, Path()], current_user: GetCurrentUserDep):
+    with SessionLocal() as db:
+        db_user = db.query(models.User).get(user_id)
+        if not db_user:
+            raise HTTPException(
+                status_code=404, detail=f'User with id: {user_id} not found')
+        return db_user
 
 
 @router.patch('/{user_id}/', response_model=User)
@@ -79,7 +80,9 @@ def change_user(user_id: Annotated[int, Path()], user: UserChange, current_user:
 
 
 @router.delete('/{user_id}/')
-def delete_user(user_id: int):
+def delete_user(user_id: int, current_user: GetCurrentUserDep):
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail='access denied')
     with SessionLocal() as db:
         user_db = db.get(models.User, user_id)
         if not user_db:
