@@ -6,6 +6,7 @@ from sqlalchemy import pool
 from alembic import context
 from src.config import DB_PATH
 from src.database import Base
+from src.models import Base as global_base
 from src.auth.models import Base as auth_base
 from src.chat.models import Base as chat_base
 

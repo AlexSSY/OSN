@@ -1,6 +1,8 @@
 from datetime import datetime
 from enum import Enum, unique
+from typing_extensions import Literal
 from pydantic import BaseModel, EmailStr
+# from ..chat.schemas import Chat
 
 
 class UserBase(BaseModel):
@@ -39,6 +41,7 @@ class User(UserBase):
     last_activity: datetime
     is_online: bool
     online_status: UserOnlineStatus
+    chats: list[Literal["Chat"]]
 
     class Config:
         orm_mode = True

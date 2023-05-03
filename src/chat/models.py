@@ -3,14 +3,11 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Table
 from sqlalchemy.orm import Mapped, relationship
 import src.auth.models as auth_models
 from ..database import Base
+from ..models import user_chat_rel
 
 
-user_chat_rel = Table(
-    "user_chat_rel",
-    Base.metadata,
-    Column("user_id", ForeignKey("users.id"), primary_key=True),
-    Column("chat_id", ForeignKey("chats.id"), primary_key=True),
-)
+class UserChatRel(Base):
+    __table__ = user_chat_rel
 
 
 class Chat(Base):
@@ -22,7 +19,7 @@ class Chat(Base):
         secondary=user_chat_rel, back_populates="chats"
     )
 
-    messages = relationship("Message", back_populates="chat_id")
+    messages = relationship("Message", back_populates="chat")
 
 
 class Message(Base):

@@ -1,10 +1,11 @@
 from datetime import datetime
 from typing import List
+from typing_extensions import Literal
 from sqlalchemy import Boolean, Column, TIMESTAMP, Enum, Integer, String, ForeignKey
 from sqlalchemy.orm import Mapped, relationship
 from src.database import Base
 from .schemas import UserOnlineStatus
-# import src.chat.models as chat_models
+from ..models import user_chat_rel
 
 
 class User(Base):
@@ -20,6 +21,5 @@ class User(Base):
     online_status = Column(
         Enum(UserOnlineStatus), default=UserOnlineStatus.online.value, nullable=False)
 
-    # chats: Mapped[List[chat_models.Chat]] = relationship(
-    #     secondary=chat_models.user_chat_rel, back_populates="users"
-    # )
+    chats = relationship("Chat", secondary=user_chat_rel,
+                         back_populates="users")
